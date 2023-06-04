@@ -10,7 +10,11 @@ namespace lab123.Controllers
     [ApiController]
     public class LabController : ControllerBase
     {
-        private static IStorage<Data> _memCache = new MemCache();
+        private IStorage<Data> _memCache;
+        public LabController(IStorage<Data> memCache)
+        {
+            _memCache = memCache;
+        }
 
         [HttpGet]
         public ActionResult<IEnumerable<Data>> Get()
