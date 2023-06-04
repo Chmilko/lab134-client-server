@@ -2,49 +2,59 @@
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using lab123.Models;
+using lab123.Storage;
 
 namespace lab123.Controllers
 {
-    [ApiController]
     [Route("[controller]")]
-    public class Controller : ControllerBase
+    [ApiController]
+    public class LabController : ControllerBase
     {
-        private static List<Data> _memCache = new List<Data>();
+        private static IStorage<Data> _memCache = new MemCache();
 
         [HttpGet]
         public ActionResult<IEnumerable<Data>> Get()
         {
-            return _memCache;
+            return Ok(_memCache.All);
         }
 
         [HttpGet("{id}")]
-        public ActionResult<Data> Get(int id)
+        public ActionResult<Data> Get(Guid id)
         {
-            if (_memCache.Count <= id) throw new IndexOutOfRangeException("Данные отсутствуют!");
-
-            return _memCache[id];
+            if (!_memCache.Has(id)) return NotFound("No such");
+            return Ok(_memCache[id]);
         }
 
         [HttpPost]
-        public void Post([FromBody] Data value)
+        public IActionResult Post([FromBody] Data value)
         {
+            var validationResult = value.Validate();
+            if (!validationResult.IsValid) return
+            BadRequest(validationResult.Errors);
             _memCache.Add(value);
+            return Ok($"{value.ToString()} has been added");
         }
 
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] Data value)
+        public IActionResult Put(Guid id, [FromBody] Data value)
         {
-            if (_memCache.Count <= id) throw new IndexOutOfRangeException("Данные отсутствуют!");
-
+            if (!_memCache.Has(id)) return NotFound("No such");
+            var validationResult = value.Validate();
+            if (!validationResult.IsValid) return
+            BadRequest(validationResult.Errors);
+            var previousValue = _memCache[id];
             _memCache[id] = value;
+            return Ok($"{previousValue.ToString()} has been updated to {value.ToString()}");
         }
 
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public IActionResult Delete(Guid id)
         {
-            if (_memCache.Count <= id) throw new IndexOutOfRangeException("Данные отсутствуют!");
-
+            if (!_memCache.Has(id)) return NotFound("No such");
+            var valueToRemove = _memCache[id];
             _memCache.RemoveAt(id);
+            return Ok($"{valueToRemove.ToString()} has been removed");
         }
     }
+
 }
