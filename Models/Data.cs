@@ -4,6 +4,7 @@ namespace lab123.Models
 {
     public class Data
     {
+        public Guid Id { get; set; } = Guid.Empty;
         public DateTime Date { get; set; }
         public int TemperatureC { get; set; }
         public int Pressure { get; set; }
