@@ -11,6 +11,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using lab123.Models;
+using lab123.Storage;
 
 namespace lab123
 {
@@ -26,12 +28,26 @@ namespace lab123
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
 
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "lab123", Version = "v1" });
             });
+
+            switch (Configuration["Storage:Type"].ToStorageEnum())
+            {
+                case StorageEnum.MemCache:
+                    services.AddSingleton<IStorage<Data>, MemCache>();
+                    break;
+                case StorageEnum.FileStorage:
+                    services.AddSingleton<IStorage<Data>>(
+                        x => new FileStorage(Configuration["Storage:FileStorage:Filename"], int.Parse(Configuration["Storage:FileStorage:FlushPeriod"])));
+                    break;
+                default:
+                    throw new IndexOutOfRangeException($"Storage type '{Configuration["Storage:Type"]}' is unknown");
+            }
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
